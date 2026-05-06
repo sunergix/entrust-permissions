@@ -5,8 +5,6 @@ use Zizaco\Entrust\Traits\EntrustUserTrait;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Cache;
-use Zizaco\Entrust\Permission;
-use Zizaco\Entrust\Role;
 use PHPUnit\Framework\TestCase;
 use Mockery as m;
 
@@ -92,7 +90,7 @@ class EntrustUserTest extends TestCase
         |------------------------------------------------------------
         */
         Config::shouldReceive('get')->with('entrust.role_user_table')->times(9)->andReturn('role_user');
-        Config::shouldReceive('get')->with('cache.ttl')->times(9)->andReturn('1440');
+        Config::shouldReceive('get')->with('entrust.cache_ttl', 3600)->times(9)->andReturn('1440');
         Cache::shouldReceive('tags->remember')->times(9)->andReturn($user->roles);
         Cache::shouldReceive('getStore')->times(9)->andReturn(new ArrayStore);
 
@@ -111,7 +109,7 @@ class EntrustUserTest extends TestCase
         $this->assertFalse($user->hasRole(['RoleC', 'RoleD']));
     }
 
-    public function testCan()
+    public function testHasPermission()
     {
         /*
         |------------------------------------------------------------
@@ -139,7 +137,7 @@ class EntrustUserTest extends TestCase
         $roleA->shouldReceive('cachedPermissions')->times(11)->andReturn($roleA->perms);
         $roleB->shouldReceive('cachedPermissions')->times(7)->andReturn($roleB->perms);
         Config::shouldReceive('get')->with('entrust.role_user_table')->times(11)->andReturn('role_user');
-        Config::shouldReceive('get')->with('cache.ttl')->times(11)->andReturn('1440');
+        Config::shouldReceive('get')->with('entrust.cache_ttl', 3600)->times(11)->andReturn('1440');
         Cache::shouldReceive('tags->remember')->times(11)->andReturn($user->roles);
         Cache::shouldReceive('getStore')->times(11)->andReturn(new ArrayStore);
 
@@ -148,19 +146,19 @@ class EntrustUserTest extends TestCase
         | Assertion
         |------------------------------------------------------------
         */
-        $this->assertTrue($user->can('manage_a'));
-        $this->assertTrue($user->can('manage_b'));
-        $this->assertTrue($user->can('manage_c'));
-        $this->assertFalse($user->can('manage_d'));
+        $this->assertTrue($user->hasPermission('manage_a'));
+        $this->assertTrue($user->hasPermission('manage_b'));
+        $this->assertTrue($user->hasPermission('manage_c'));
+        $this->assertFalse($user->hasPermission('manage_d'));
 
-        $this->assertTrue($user->can(['manage_a', 'manage_b', 'manage_c']));
-        $this->assertTrue($user->can(['manage_a', 'manage_b', 'manage_d']));
-        $this->assertFalse($user->can(['manage_a', 'manage_b', 'manage_d'], true));
-        $this->assertFalse($user->can(['manage_d', 'manage_e']));
+        $this->assertTrue($user->hasPermission(['manage_a', 'manage_b', 'manage_c']));
+        $this->assertTrue($user->hasPermission(['manage_a', 'manage_b', 'manage_d']));
+        $this->assertFalse($user->hasPermission(['manage_a', 'manage_b', 'manage_d'], true));
+        $this->assertFalse($user->hasPermission(['manage_d', 'manage_e']));
     }
 
 
-    public function testCanWithPlaceholderSupport ()
+    public function testHasPermissionWithPlaceholderSupport()
     {
         /*
         |------------------------------------------------------------
@@ -185,7 +183,7 @@ class EntrustUserTest extends TestCase
         */
         $role->shouldReceive('cachedPermissions')->times(6)->andReturn($role->perms);
         Config::shouldReceive('get')->with('entrust.role_user_table')->times(6)->andReturn('role_user');
-        Config::shouldReceive('get')->with('cache.ttl')->times(6)->andReturn('1440');
+        Config::shouldReceive('get')->with('entrust.cache_ttl', 3600)->times(6)->andReturn('1440');
         Cache::shouldReceive('tags->remember')->times(6)->andReturn($user->roles);
         Cache::shouldReceive('getStore')->times(6)->andReturn(new ArrayStore);
 
@@ -194,13 +192,13 @@ class EntrustUserTest extends TestCase
         | Assertion
         |------------------------------------------------------------
         */
-        $this->assertTrue($user->can('admin.posts'));
-        $this->assertTrue($user->can('admin.pages'));
-        $this->assertTrue($user->can('admin.users'));
-        $this->assertFalse($user->can('admin.config'));
+        $this->assertTrue($user->hasPermission('admin.posts'));
+        $this->assertTrue($user->hasPermission('admin.pages'));
+        $this->assertTrue($user->hasPermission('admin.users'));
+        $this->assertFalse($user->hasPermission('admin.config'));
 
-        $this->assertTrue($user->can(['admin.*']));
-        $this->assertFalse($user->can(['site.*']));
+        $this->assertTrue($user->hasPermission(['admin.*']));
+        $this->assertFalse($user->hasPermission(['site.*']));
     }
 
 
@@ -244,7 +242,7 @@ class EntrustUserTest extends TestCase
         $roleA->shouldReceive('cachedPermissions')->times(16)->andReturn($roleA->perms);
         $roleB->shouldReceive('cachedPermissions')->times(12)->andReturn($roleB->perms);
         Config::shouldReceive('get')->with('entrust.role_user_table')->times(32)->andReturn('role_user');
-        Config::shouldReceive('get')->with('cache.ttl')->times(32)->andReturn('1440');
+        Config::shouldReceive('get')->with('entrust.cache_ttl', 3600)->times(32)->andReturn('1440');
         Cache::shouldReceive('tags->remember')->times(32)->andReturn($user->roles);
         Cache::shouldReceive('getStore')->times(32)->andReturn(new ArrayStore);
 
@@ -254,10 +252,10 @@ class EntrustUserTest extends TestCase
         $user->shouldReceive('hasRole')
             ->with(m::anyOf($nonUserRoleNameA, $nonUserRoleNameB), m::anyOf(true, false))
             ->andReturn(false);
-        $user->shouldReceive('can')
+        $user->shouldReceive('hasPermission')
             ->with(m::anyOf($userPermNameA, $userPermNameB, $userPermNameC), m::anyOf(true, false))
             ->andReturn(true);
-        $user->shouldReceive('can')
+        $user->shouldReceive('hasPermission')
             ->with(m::anyOf($nonUserPermNameA, $nonUserPermNameB), m::anyOf(true, false))
             ->andReturn(false);
 
@@ -368,7 +366,7 @@ class EntrustUserTest extends TestCase
         $roleA->shouldReceive('cachedPermissions')->times(16)->andReturn($roleA->perms);
         $roleB->shouldReceive('cachedPermissions')->times(12)->andReturn($roleB->perms);
         Config::shouldReceive('get')->with('entrust.role_user_table')->times(32)->andReturn('role_user');
-        Config::shouldReceive('get')->with('cache.ttl')->times(32)->andReturn('1440');
+        Config::shouldReceive('get')->with('entrust.cache_ttl', 3600)->times(32)->andReturn('1440');
         Cache::shouldReceive('tags->remember')->times(32)->andReturn($user->roles);
         Cache::shouldReceive('getStore')->times(32)->andReturn(new ArrayStore);
 
@@ -378,10 +376,10 @@ class EntrustUserTest extends TestCase
         $user->shouldReceive('hasRole')
             ->with(m::anyOf($nonUserRoleNameA, $nonUserRoleNameB), m::anyOf(true, false))
             ->andReturn(false);
-        $user->shouldReceive('can')
+        $user->shouldReceive('hasPermission')
             ->with(m::anyOf($userPermNameA, $userPermNameB, $userPermNameC), m::anyOf(true, false))
             ->andReturn(true);
-        $user->shouldReceive('can')
+        $user->shouldReceive('hasPermission')
             ->with(m::anyOf($nonUserPermNameA, $nonUserPermNameB), m::anyOf(true, false))
             ->andReturn(false);
 
@@ -530,7 +528,7 @@ class EntrustUserTest extends TestCase
         $roleA->shouldReceive('cachedPermissions')->times(16)->andReturn($roleA->perms);
         $roleB->shouldReceive('cachedPermissions')->times(12)->andReturn($roleB->perms);
         Config::shouldReceive('get')->with('entrust.role_user_table')->times(32)->andReturn('role_user');
-        Config::shouldReceive('get')->with('cache.ttl')->times(32)->andReturn('1440');
+        Config::shouldReceive('get')->with('entrust.cache_ttl', 3600)->times(32)->andReturn('1440');
         Cache::shouldReceive('tags->remember')->times(32)->andReturn($user->roles);
         Cache::shouldReceive('getStore')->times(32)->andReturn(new ArrayStore);
 
@@ -540,10 +538,10 @@ class EntrustUserTest extends TestCase
         $user->shouldReceive('hasRole')
             ->with(m::anyOf($nonUserRoleNameA, $nonUserRoleNameB), m::anyOf(true, false))
             ->andReturn(false);
-        $user->shouldReceive('can')
+        $user->shouldReceive('hasPermission')
             ->with(m::anyOf($userPermNameA, $userPermNameB, $userPermNameC), m::anyOf(true, false))
             ->andReturn(true);
-        $user->shouldReceive('can')
+        $user->shouldReceive('hasPermission')
             ->with(m::anyOf($nonUserPermNameA, $nonUserPermNameB), m::anyOf(true, false))
             ->andReturn(false);
 
@@ -706,7 +704,7 @@ class EntrustUserTest extends TestCase
         $roleA->shouldReceive('cachedPermissions')->times(4)->andReturn($roleA->perms);
         $roleB->shouldReceive('cachedPermissions')->times(2)->andReturn($roleB->perms);
         Config::shouldReceive('get')->with('entrust.role_user_table')->times(8)->andReturn('role_user');
-        Config::shouldReceive('get')->with('cache.ttl')->times(8)->andReturn('1440');
+        Config::shouldReceive('get')->with('entrust.cache_ttl', 3600)->times(8)->andReturn('1440');
         Cache::shouldReceive('tags->remember')->times(8)->andReturn($user->roles);
         Cache::shouldReceive('getStore')->times(8)->andReturn(new ArrayStore);
 
@@ -716,10 +714,10 @@ class EntrustUserTest extends TestCase
         $user->shouldReceive('hasRole')
             ->with('NonUserRoleB', m::anyOf(true, false))
             ->andReturn(false);
-        $user->shouldReceive('can')
+        $user->shouldReceive('hasPermission')
             ->with(m::anyOf('user_can_a', 'user_can_b', 'user_can_c'), m::anyOf(true, false))
             ->andReturn(true);
-        $user->shouldReceive('can')
+        $user->shouldReceive('hasPermission')
             ->with('user_cannot_b', m::anyOf(true, false))
             ->andReturn(false);
 
@@ -782,7 +780,7 @@ class EntrustUserTest extends TestCase
         $roleA->shouldReceive('cachedPermissions')->times(16)->andReturn($roleA->perms);
         $roleB->shouldReceive('cachedPermissions')->times(12)->andReturn($roleB->perms);
         Config::shouldReceive('get')->with('entrust.role_user_table')->times(32)->andReturn('role_user');
-        Config::shouldReceive('get')->with('cache.ttl')->times(32)->andReturn('1440');
+        Config::shouldReceive('get')->with('entrust.cache_ttl', 3600)->times(32)->andReturn('1440');
         Cache::shouldReceive('tags->remember')->times(32)->andReturn($user->roles);
         Cache::shouldReceive('getStore')->times(32)->andReturn(new ArrayStore);
 
@@ -792,10 +790,10 @@ class EntrustUserTest extends TestCase
         $user->shouldReceive('hasRole')
             ->with(m::anyOf($nonUserRoleNameA, $nonUserRoleNameB), m::anyOf(true, false))
             ->andReturn(false);
-        $user->shouldReceive('can')
+        $user->shouldReceive('hasPermission')
             ->with(m::anyOf($userPermNameA, $userPermNameB, $userPermNameC), m::anyOf(true, false))
             ->andReturn(true);
-        $user->shouldReceive('can')
+        $user->shouldReceive('hasPermission')
             ->with(m::anyOf($nonUserPermNameA, $nonUserPermNameB), m::anyOf(true, false))
             ->andReturn(false);
 
@@ -877,12 +875,12 @@ class EntrustUserTest extends TestCase
         $user->id = 4;
         $user->primaryKey = 'id';
 
-        function isExceptionThrown(
+        $isExceptionThrown = function (
             HasRoleUser $user,
             array $roles,
             array $perms,
             array $options
-        ) {
+        ): bool {
             $isExceptionThrown = false;
 
             try {
@@ -892,7 +890,7 @@ class EntrustUserTest extends TestCase
             }
 
             return $isExceptionThrown;
-        }
+        };
 
         /*
         |------------------------------------------------------------
@@ -901,7 +899,7 @@ class EntrustUserTest extends TestCase
         */
         $user->shouldReceive('hasRole')
             ->times(3);
-        $user->shouldReceive('can')
+        $user->shouldReceive('hasPermission')
             ->times(3);
 
         /*
@@ -909,10 +907,10 @@ class EntrustUserTest extends TestCase
         | Assertion
         |------------------------------------------------------------
         */
-        $this->assertFalse(isExceptionThrown($user, ['RoleA'], ['manage_a'], ['return_type' => 'boolean']));
-        $this->assertFalse(isExceptionThrown($user, ['RoleA'], ['manage_a'], ['return_type' => 'array']));
-        $this->assertFalse(isExceptionThrown($user, ['RoleA'], ['manage_a'], ['return_type' => 'both']));
-        $this->assertTrue(isExceptionThrown($user, ['RoleA'], ['manage_a'], ['return_type' => 'potato']));
+        $this->assertFalse($isExceptionThrown($user, ['RoleA'], ['manage_a'], ['return_type' => 'boolean']));
+        $this->assertFalse($isExceptionThrown($user, ['RoleA'], ['manage_a'], ['return_type' => 'array']));
+        $this->assertFalse($isExceptionThrown($user, ['RoleA'], ['manage_a'], ['return_type' => 'both']));
+        $this->assertTrue($isExceptionThrown($user, ['RoleA'], ['manage_a'], ['return_type' => 'potato']));
     }
 
     public function testAttachRole()
@@ -955,6 +953,8 @@ class EntrustUserTest extends TestCase
         $user->attachRole($roleObject);
         $user->attachRole($roleArray);
         $user->attachRole(3);
+
+        $this->addToAssertionCount(1);
     }
 
     public function testDetachRole()
@@ -998,6 +998,8 @@ class EntrustUserTest extends TestCase
         $user->detachRole($roleObject);
         $user->detachRole($roleArray);
         $user->detachRole(3);
+
+        $this->addToAssertionCount(1);
     }
 
     public function testAttachRoles()
@@ -1030,6 +1032,8 @@ class EntrustUserTest extends TestCase
         |------------------------------------------------------------
         */
         $user->attachRoles([1, 2, 3]);
+
+        $this->addToAssertionCount(1);
     }
 
     public function testDetachRoles()
@@ -1062,6 +1066,8 @@ class EntrustUserTest extends TestCase
         |------------------------------------------------------------
         */
         $user->detachRoles([1, 2, 3]);
+
+        $this->addToAssertionCount(1);
     }
 
     public function testDetachAllRoles()
@@ -1104,11 +1110,13 @@ class EntrustUserTest extends TestCase
         */
         $user->detachRoles();
 
+        $this->addToAssertionCount(1);
+
     }
 
     protected function mockPermission($permName)
     {
-        $permMock = m::mock('Zizaco\Entrust\Permission');
+        $permMock = m::mock();
         $permMock->name = $permName;
         $permMock->display_name = ucwords(str_replace('_', ' ', $permName));
         $permMock->id = 1;
@@ -1118,7 +1126,7 @@ class EntrustUserTest extends TestCase
 
     protected function mockRole($roleName)
     {
-        $roleMock = m::mock('Zizaco\Entrust\Role');
+        $roleMock = m::mock();
         $roleMock->name = $roleName;
         $roleMock->perms = [];
         $roleMock->permissions = [];

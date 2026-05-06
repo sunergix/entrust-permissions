@@ -1,14 +1,14 @@
-# ENTRUST (Laravel 9|10 Package)
+# ENTRUST (Laravel 12|13 Package)
 
 Forked from [zizaco/entrust](https://github.com/Zizaco/entrust)
 
-Entrust is a succinct and flexible way to add Role-based Permissions to **Laravel 9|10|11**.
+Entrust is a succinct and flexible way to add role-based permissions to **Laravel 12|13**.
 
 If you are using an older version of laravel, use version ~3.0
 
 ## Contents
 
-- [ENTRUST (Laravel 9|10 Package)](#entrust-laravel-910-package)
+- [ENTRUST (Laravel 12|13 Package)](#entrust-laravel-1213-package)
   - [Contents](#contents)
   - [Installation](#installation)
   - [Configuration](#configuration)
@@ -24,36 +24,34 @@ If you are using an older version of laravel, use version ~3.0
       - [User ability](#user-ability)
     - [Blade templates](#blade-templates)
     - [Middleware](#middleware)
-    - [Short syntax route filter](#short-syntax-route-filter)
-    - [Route filter](#route-filter)
   - [Troubleshooting](#troubleshooting)
   - [License](#license)
   - [Contribution guidelines](#contribution-guidelines)
 
 ## Installation
 
-1) In order to install Laravel 5 Entrust, just add the following to your composer.json. Then run `composer update`:
+1) Install the package with Composer:
 
-```json
-"zizaco/entrust": "5.2.x-dev"
+```shell
+composer require sunergix/entrust-permissions
 ```
 
-2) Open your `config/app.php` and add the following to the `providers` array:
+2) Laravel package discovery registers the service provider and facade automatically. If your application disables package discovery, add the service provider manually:
 
 ```php
 Zizaco\Entrust\EntrustServiceProvider::class,
 ```
 
-3) In the same `config/app.php` and add the following to the `aliases ` array:
+3) If needed, add the facade alias manually:
 
 ```php
-'Entrust'   => Zizaco\Entrust\EntrustFacade::class,
+'Entrust' => Zizaco\Entrust\EntrustFacade::class,
 ```
 
 4) Run the command below to publish the package config file `config/entrust.php`:
 
 ```shell
-php artisan vendor:publish
+php artisan vendor:publish --tag=entrust-config
 ```
 
 5) Open your `config/auth.php` and add the following to it:
@@ -68,7 +66,7 @@ php artisan vendor:publish
 ],
 ```
 
-6)  If you want to use [Middleware](#middleware) (requires Laravel 5.1 or later) you also need to add the following:
+6) If you want to use [Middleware](#middleware), register aliases in your bootstrap middleware configuration:
 
 ```php
     'role' => \Zizaco\Entrust\Middleware\EntrustRole::class,
@@ -76,7 +74,7 @@ php artisan vendor:publish
     'ability' => \Zizaco\Entrust\Middleware\EntrustAbility::class,
 ```
 
-to `routeMiddleware` array in `app/Http/Kernel.php`.
+For Laravel 12 and 13, register aliases with `bootstrap/app.php` middleware configuration.
 
 ## Configuration
 
@@ -167,7 +165,7 @@ class User extends Eloquent
 }
 ```
 
-This will enable the relation with `Role` and add the following methods `roles()`, `hasRole($name)`, `withRole($name)`, `can($permission)`, and `ability($roles, $permissions, $options)` within your `User` model.
+This will enable the relation with `Role` and add the following methods `roles()`, `hasRole($name)`, `withRole($name)`, `hasPermission($permission)`, and `ability($roles, $permissions, $options)` within your `User` model.
 
 Don't forget to dump composer autoload
 
@@ -257,15 +255,15 @@ Now we can check for roles and permissions simply by doing:
 ```php
 $user->hasRole('owner');   // false
 $user->hasRole('admin');   // true
-$user->can('edit-user');   // false
-$user->can('create-post'); // true
+$user->hasPermission('edit-user');   // false
+$user->hasPermission('create-post'); // true
 ```
 
-Both `hasRole()` and `can()` can receive an array of roles & permissions to check:
+Both `hasRole()` and `hasPermission()` can receive an array of roles & permissions to check:
 
 ```php
 $user->hasRole(['owner', 'admin']);       // true
-$user->can(['edit-user', 'create-post']); // true
+$user->hasPermission(['edit-user', 'create-post']); // true
 ```
 
 By default, if any of the roles or permissions are present for a user then the method will return true.
@@ -274,13 +272,13 @@ Passing `true` as a second parameter instructs the method to require **all** of 
 ```php
 $user->hasRole(['owner', 'admin']);             // true
 $user->hasRole(['owner', 'admin'], true);       // false, user does not have admin role
-$user->can(['edit-user', 'create-post']);       // true
-$user->can(['edit-user', 'create-post'], true); // false, user does not have edit-user permission
+$user->hasPermission(['edit-user', 'create-post']);       // true
+$user->hasPermission(['edit-user', 'create-post'], true); // false, user does not have edit-user permission
 ```
 
 You can have as many `Role`s as you want for each `User` and vice versa.
 
-The `Entrust` class has shortcuts to both `can()` and `hasRole()` for the currently logged in user:
+The `Entrust` class has shortcuts to both `can()` and `hasRole()` for the currently logged in user. The user model method is named `hasPermission()` to avoid colliding with Laravel's Gate-aware `can()` method:
 
 ```php
 Entrust::hasRole('role-name');
@@ -289,17 +287,17 @@ Entrust::can('permission-name');
 // is identical to
 
 Auth::user()->hasRole('role-name');
-Auth::user()->can('permission-name');
+Auth::user()->hasPermission('permission-name');
 ```
 
 You can also use placeholders (wildcards) to check any matching permission by doing:
 
 ```php
 // match any admin permission
-$user->can("admin.*"); // true
+$user->hasPermission("admin.*"); // true
 
 // match any permission about users
-$user->can("*_users"); // true
+$user->hasPermission("*_users"); // true
 ```
 
 To filter users according a specific role, you may use withRole() scope, for example to retrieve all admins:
@@ -425,87 +423,7 @@ For more complex situations use `ability` middleware which accepts 3 parameters:
 'middleware' => ['ability:admin|owner,create-post|edit-user,true']
 ```
 
-### Short syntax route filter
-
-To filter a route by permission or role you can call the following in your `app/Http/routes.php`:
-
-```php
-// only users with roles that have the 'manage_posts' permission will be able to access any route within admin/post
-Entrust::routeNeedsPermission('admin/post*', 'create-post');
-
-// only owners will have access to routes within admin/advanced
-Entrust::routeNeedsRole('admin/advanced*', 'owner');
-
-// optionally the second parameter can be an array of permissions or roles
-// user would need to match all roles or permissions for that route
-Entrust::routeNeedsPermission('admin/post*', array('create-post', 'edit-comment'));
-Entrust::routeNeedsRole('admin/advanced*', array('owner','writer'));
-```
-
-Both of these methods accept a third parameter.
-If the third parameter is null then the return of a prohibited access will be `App::abort(403)`, otherwise the third parameter will be returned.
-So you can use it like:
-
-```php
-Entrust::routeNeedsRole('admin/advanced*', 'owner', Redirect::to('/home'));
-```
-
-Furthermore both of these methods accept a fourth parameter.
-It defaults to true and checks all roles/permissions given.
-If you set it to false, the function will only fail if all roles/permissions fail for that user.
-Useful for admin applications where you want to allow access for multiple groups.
-
-```php
-// if a user has 'create-post', 'edit-comment', or both they will have access
-Entrust::routeNeedsPermission('admin/post*', array('create-post', 'edit-comment'), null, false);
-
-// if a user is a member of 'owner', 'writer', or both they will have access
-Entrust::routeNeedsRole('admin/advanced*', array('owner','writer'), null, false);
-
-// if a user is a member of 'owner', 'writer', or both, or user has 'create-post', 'edit-comment' they will have access
-// if the 4th parameter is true then the user must be a member of Role and must have Permission
-Entrust::routeNeedsRoleOrPermission(
-    'admin/advanced*',
-    array('owner', 'writer'),
-    array('create-post', 'edit-comment'),
-    null,
-    false
-);
-```
-
-### Route filter
-
-Entrust roles/permissions can be used in filters by simply using the `can` and `hasRole` methods from within the Facade:
-
-```php
-Route::filter('manage_posts', function()
-{
-    // check the current user
-    if (!Entrust::can('create-post')) {
-        return Redirect::to('admin');
-    }
-});
-
-// only users with roles that have the 'manage_posts' permission will be able to access any admin/post route
-Route::when('admin/post*', 'manage_posts');
-```
-
-Using a filter to check for a role:
-
-```php
-Route::filter('owner_role', function()
-{
-    // check the current user
-    if (!Entrust::hasRole('Owner')) {
-        App::abort(403);
-    }
-});
-
-// only owners will have access to routes within admin/advanced
-Route::when('admin/advanced*', 'owner_role');
-```
-
-As you can see `Entrust::hasRole()` and `Entrust::can()` checks if the user is logged in, and then if he or she has the role or permission.
+As you can see, `Entrust::hasRole()` and `Entrust::can()` check if the user is logged in, and then if they have the role or permission.
 If the user is not logged the return will also be `false`.
 
 ## Troubleshooting
@@ -519,7 +437,7 @@ SQLSTATE[HY000]: General error: 1005 Can't create table 'laravelbootstrapstarter
 ```
 
 Then it's likely that the `id` column in your user table does not match the `user_id` column in `role_user`.
-Make sure both are `INT(10)`.
+Laravel's default user id is an unsigned big integer, and the generated migration now uses `unsignedBigInteger` for pivot foreign keys.
 
 When trying to use the EntrustUserTrait methods, you encounter the error which looks like
 
@@ -527,7 +445,7 @@ When trying to use the EntrustUserTrait methods, you encounter the error which l
 
 then probably you don't have published Entrust assets or something went wrong when you did it.
 First of all check that you have the `entrust.php` file in your `config` directory.
-If you don't, then try `php artisan vendor:publish` and, if it does not appear, manually copy the `/vendor/zizaco/entrust/src/config/config.php` file in your config directory and rename it `entrust.php`.
+If you don't, then try `php artisan vendor:publish --tag=entrust-config` and, if it does not appear, manually copy the `/vendor/zizaco/entrust/src/config/config.php` file in your config directory and rename it `entrust.php`.
 
 If your app uses a custom namespace then you'll need to tell entrust where your `permission` and `role` models are, you can do this by editing the config file in `config/entrust.php`
 

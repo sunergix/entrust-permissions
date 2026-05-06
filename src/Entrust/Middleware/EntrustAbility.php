@@ -1,4 +1,6 @@
-<?php namespace Zizaco\Entrust\Middleware;
+<?php
+
+namespace Zizaco\Entrust\Middleware;
 
 /**
  * This file is part of Entrust,
@@ -10,22 +12,23 @@
 
 use Closure;
 use Illuminate\Contracts\Auth\Guard;
+use Illuminate\Http\Request;
 
 class EntrustAbility
 {
-	const DELIMITER = '|';
+    private const DELIMITER = '|';
 
-	protected $auth;
+    protected Guard $auth;
 
 	/**
 	 * Creates a new instance of the middleware.
 	 *
 	 * @param Guard $auth
 	 */
-	public function __construct(Guard $auth)
-	{
-		$this->auth = $auth;
-	}
+    public function __construct(Guard $auth)
+    {
+        $this->auth = $auth;
+    }
 
 	/**
 	 * Handle an incoming request.
@@ -37,28 +40,31 @@ class EntrustAbility
 	 * @param bool $validateAll
 	 * @return mixed
 	 */
-	public function handle($request, Closure $next, $roles, $permissions, $validateAll = false)
-	{
-		if (!is_array($roles)) {
-	    // Convert $roles to an empty string if it's null or not a string
-	    $roles = $roles ?? '';  
-	    $roles = explode(self::DELIMITER, $roles);
-		}
+    public function handle(
+        Request $request,
+        Closure $next,
+        string|array|null $roles,
+        string|array|null $permissions,
+        bool|string $validateAll = false
+    ): mixed {
+        $user = $this->auth->user();
+        $roles = $this->parse($roles);
+        $permissions = $this->parse($permissions);
+        $validateAll = filter_var($validateAll, FILTER_VALIDATE_BOOLEAN);
 
-		if (!is_array($permissions)) {
-		    // Convert $permissions to an empty string if it's null or not a string
-		    $permissions = $permissions ?? '';  
-		    $permissions = explode(self::DELIMITER, $permissions);
-		}
+        if (! $user || ! $user->ability($roles, $permissions, ['validate_all' => $validateAll])) {
+            abort(403);
+        }
 
-		if (!is_bool($validateAll)) {
-			$validateAll = filter_var($validateAll, FILTER_VALIDATE_BOOLEAN);
-		}
+        return $next($request);
+    }
 
-		if ($this->auth->guest() || !$request->user()->ability($roles, $permissions, [ 'validate_all' => $validateAll ])) {
-			abort(403);
-		}
+    protected function parse(string|array|null $value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
 
-		return $next($request);
-	}
+        return array_values(array_filter(explode(self::DELIMITER, $value ?? ''), 'strlen'));
+    }
 }

@@ -1,4 +1,6 @@
-<?php namespace Zizaco\Entrust;
+<?php
+
+namespace Zizaco\Entrust;
 
 /**
  * This file is part of Entrust,
@@ -23,6 +25,17 @@ class EntrustPermission extends Model implements EntrustPermissionInterface
      * @var string
      */
     protected $table;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'display_name',
+        'description',
+    ];
 
     /**
      * Creates a new instance of the model.
