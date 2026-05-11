@@ -1,127 +1,46 @@
 <?php
 
-use Zizaco\Entrust\Middleware\EntrustRole;
 use Mockery as m;
+use Zizaco\Entrust\Middleware\EntrustRole;
 
 class EntrustRoleTest extends MiddlewareTest
 {
-    public function testHandle_IsGuestWithMismatchingRole_ShouldAbort403()
+    public function testHandle_Guest_ShouldAbort403()
     {
-        /*
-        |------------------------------------------------------------
-        | Set
-        |------------------------------------------------------------
-        */
-        $guard = m::mock('Illuminate\Contracts\Auth\Guard[guest]');
-        $request = $this->mockRequest();
-
-        $middleware = new EntrustRole($guard);
-
-        /*
-        |------------------------------------------------------------
-        | Expectation
-        |------------------------------------------------------------
-        */
-        $guard->shouldReceive('guest')->andReturn(true);
-        $request->user()->shouldReceive('hasRole')->andReturn(false);
-
-        $middleware->handle($request, function () {}, null, null, true);
-
-        /*
-        |------------------------------------------------------------
-        | Assertion
-        |------------------------------------------------------------
-        */
-        $this->assertAbortCode(403);
-    }
-
-    public function testHandle_IsGuestWithMatchingRole_ShouldAbort403()
-    {
-        /*
-        |------------------------------------------------------------
-        | Set
-        |------------------------------------------------------------
-        */
         $guard = m::mock('Illuminate\Contracts\Auth\Guard');
         $request = $this->mockRequest();
-
         $middleware = new EntrustRole($guard);
 
-        /*
-        |------------------------------------------------------------
-        | Expectation
-        |------------------------------------------------------------
-        */
-        $guard->shouldReceive('guest')->andReturn(true);
-        $request->user()->shouldReceive('hasRole')->andReturn(true);
+        $guard->shouldReceive('user')->andReturnNull();
 
-        $middleware->handle($request, function () {}, null, null);
-
-        /*
-        |------------------------------------------------------------
-        | Assertion
-        |------------------------------------------------------------
-        */
-        $this->assertAbortCode(403);
+        $this->expectAbortCode(403);
+        $middleware->handle($request, fn () => null, 'admin');
     }
 
     public function testHandle_IsLoggedInWithMismatchRole_ShouldAbort403()
     {
-        /*
-        |------------------------------------------------------------
-        | Set
-        |------------------------------------------------------------
-        */
         $guard = m::mock('Illuminate\Contracts\Auth\Guard');
         $request = $this->mockRequest();
-
+        $user = m::mock('_mockedUser');
         $middleware = new EntrustRole($guard);
 
-        /*
-        |------------------------------------------------------------
-        | Expectation
-        |------------------------------------------------------------
-        */
-        $guard->shouldReceive('guest')->andReturn(false);
-        $request->user()->shouldReceive('hasRole')->andReturn(false);
+        $guard->shouldReceive('user')->andReturn($user);
+        $user->shouldReceive('hasRole')->with(['admin', 'editor'])->andReturn(false);
 
-        $middleware->handle($request, function () {}, null, null);
-
-        /*
-        |------------------------------------------------------------
-        | Assertion
-        |------------------------------------------------------------
-        */
-        $this->assertAbortCode(403);
+        $this->expectAbortCode(403);
+        $middleware->handle($request, fn () => null, 'admin|editor');
     }
 
     public function testHandle_IsLoggedInWithMatchingRole_ShouldNotAbort()
     {
-        /*
-        |------------------------------------------------------------
-        | Set
-        |------------------------------------------------------------
-        */
         $guard = m::mock('Illuminate\Contracts\Auth\Guard');
         $request = $this->mockRequest();
-
+        $user = m::mock('_mockedUser');
         $middleware = new EntrustRole($guard);
 
-        /*
-        |------------------------------------------------------------
-        | Expectation
-        |------------------------------------------------------------
-        */
-        $guard->shouldReceive('guest')->andReturn(false);
-        $request->user()->shouldReceive('hasRole')->andReturn(true);
+        $guard->shouldReceive('user')->andReturn($user);
+        $user->shouldReceive('hasRole')->with(['admin'])->andReturn(true);
 
-        $middleware->handle($request, function () {}, null, null);
-
-        /*
-        |------------------------------------------------------------
-        | Assertion
-        |------------------------------------------------------------
-        */
-        $this->assertDidNotAbort();
+        $this->assertSame('next', $middleware->handle($request, fn () => 'next', 'admin'));
     }
 }

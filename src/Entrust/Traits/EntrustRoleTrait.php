@@ -1,4 +1,6 @@
-<?php namespace Zizaco\Entrust\Traits;
+<?php
+
+namespace Zizaco\Entrust\Traits;
 
 /**
  * This file is part of Entrust,
@@ -9,8 +11,9 @@
  */
 
 use Illuminate\Cache\TaggableStore;
-use Illuminate\Support\Facades\Config;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 
 trait EntrustRoleTrait
 {
@@ -20,10 +23,12 @@ trait EntrustRoleTrait
         $rolePrimaryKey = $this->primaryKey;
         $cacheKey = 'entrust_permissions_for_role_' . $this->$rolePrimaryKey;
         if (Cache::getStore() instanceof TaggableStore) {
-            return Cache::tags(Config::get('entrust.permission_role_table'))->remember($cacheKey, Config::get('cache.ttl', 60), function () {
+            return Cache::tags(Config::get('entrust.permission_role_table'))->remember($cacheKey, Config::get('entrust.cache_ttl', 3600), function () {
                 return $this->perms()->get();
             });
-        } else return $this->perms()->get();
+        }
+
+        return $this->perms()->get();
     }
 
     public function save(array $options = [])
@@ -66,7 +71,7 @@ trait EntrustRoleTrait
      */
     public function users()
     {
-        return $this->belongsToMany(Config::get('auth.providers.users.model'), Config::get('entrust.role_user_table'), Config::get('entrust.role_foreign_key'), Config::get('entrust.user_foreign_key'));
+        return $this->belongsToMany(Config::get('entrust.user', Config::get('auth.providers.users.model')), Config::get('entrust.role_user_table'), Config::get('entrust.role_foreign_key'), Config::get('entrust.user_foreign_key'));
     }
 
     /**
@@ -87,12 +92,10 @@ trait EntrustRoleTrait
      *
      * @return void|bool
      */
-    public static function boot()
+    public static function bootEntrustRoleTrait()
     {
-        parent::boot();
-
         static::deleting(function ($role) {
-            if (!method_exists(Config::get('entrust.role'), 'bootSoftDeletes')) {
+            if (! static::entrustUsesSoftDeletes($role)) {
                 $role->users()->sync([]);
                 $role->perms()->sync([]);
             }
@@ -220,10 +223,17 @@ trait EntrustRoleTrait
      */
     public function detachPermissions($permissions = null)
     {
-        if (!$permissions) $permissions = $this->perms()->get();
+        if (! $permissions) {
+            $permissions = $this->perms()->get();
+        }
 
         foreach ($permissions as $permission) {
             $this->detachPermission($permission);
         }
+    }
+
+    protected static function entrustUsesSoftDeletes(object $model): bool
+    {
+        return in_array(SoftDeletes::class, class_uses_recursive($model::class), true);
     }
 }

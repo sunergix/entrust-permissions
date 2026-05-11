@@ -1,6 +1,6 @@
 {
     "name": "sunergix/entrust-permissions",
-    "description": "This package provides a flexible way to add Role-based Permissions to Laravel. Supports laravel 5|6|7|8",
+    "description": "This package provides a flexible way to add role-based permissions to Laravel 12 and 13.",
     "keywords": ["laravel","illuminate","auth","roles","acl","permission"],
     "license": "MIT",
     "authors": [
@@ -26,15 +26,17 @@
         }
     ],
     "require": {
-        "php": "^8.2",
-        "illuminate/console": "^11",
-        "illuminate/support": "^11",
-        "illuminate/cache": "^11",
-        "illuminate/database": "^11"
+        "php": "^8.3",
+        "illuminate/console": "^12.0 || ^13.0",
+        "illuminate/support": "^12.0 || ^13.0",
+        "illuminate/cache": "^12.0 || ^13.0",
+        "illuminate/database": "^12.0 || ^13.0",
+        "illuminate/http": "^12.0 || ^13.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^11",
-        "mockery/mockery": "^1.5"
+        "orchestra/testbench": "^10.0 || ^11.0",
+        "phpunit/phpunit": "^11.5 || ^12.0",
+        "mockery/mockery": "^1.6"
     },
     "autoload": {
         "classmap": [
@@ -57,7 +59,10 @@
     "autoload-dev": {
         "classmap": [
             "tests/Middleware/MiddlewareTest.php"
-        ]
+        ],
+        "psr-4": {
+            "Zizaco\\Entrust\\Tests\\": "tests/"
+        }
     },
     "minimum-stability": "stable"
 }

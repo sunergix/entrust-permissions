@@ -19,7 +19,7 @@ return [
     | the role if it is in a different namespace.
     |
     */
-    'role' => 'App\Role',
+    'role' => App\Models\Role::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -51,7 +51,7 @@ return [
     | Update the User if it is in a different namespace.
     |
     */
-    'user' => 'App\User',
+    'user' => App\Models\User::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -63,6 +63,17 @@ return [
     |
     */
     'users_table' => 'users',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application User Primary Key
+    |--------------------------------------------------------------------------
+    |
+    | This is the primary key on the users table referenced by the Entrust
+    | role_user pivot table.
+    |
+    */
+    'user_key_name' => 'id',
 
     /*
     |--------------------------------------------------------------------------
@@ -95,7 +106,7 @@ return [
     | Update the permission if it is in a different namespace.
     |
     */
-    'permission' => 'App\Permission',
+    'permission' => App\Models\Permission::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -129,4 +140,15 @@ return [
     |
     */
     'permission_foreign_key' => 'permission_id',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Entrust Cache TTL
+    |--------------------------------------------------------------------------
+    |
+    | The number of seconds Entrust should cache role and permission lookups
+    | when the configured cache store supports tags.
+    |
+    */
+    'cache_ttl' => 3600,
 ];

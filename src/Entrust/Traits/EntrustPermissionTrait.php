@@ -1,4 +1,6 @@
-<?php namespace Zizaco\Entrust\Traits;
+<?php
+
+namespace Zizaco\Entrust\Traits;
 
 /**
  * This file is part of Entrust,
@@ -8,6 +10,7 @@
  * @package Zizaco\Entrust
  */
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Config;
 
 trait EntrustPermissionTrait
@@ -29,16 +32,19 @@ trait EntrustPermissionTrait
      *
      * @return void|bool
      */
-    public static function boot()
+    public static function bootEntrustPermissionTrait()
     {
-        parent::boot();
-
-        static::deleting(function($permission) {
-            if (!method_exists(Config::get('entrust.permission'), 'bootSoftDeletes')) {
+        static::deleting(function ($permission) {
+            if (! static::entrustUsesSoftDeletes($permission)) {
                 $permission->roles()->sync([]);
             }
 
             return true;
         });
+    }
+
+    protected static function entrustUsesSoftDeletes(object $model): bool
+    {
+        return in_array(SoftDeletes::class, class_uses_recursive($model::class), true);
     }
 }

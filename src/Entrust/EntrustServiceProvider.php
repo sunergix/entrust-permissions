@@ -1,4 +1,6 @@
-<?php namespace Zizaco\Entrust;
+<?php
+
+namespace Zizaco\Entrust;
 
 /**
  * This file is part of Entrust,
@@ -14,28 +16,22 @@ use Illuminate\Support\ServiceProvider;
 class EntrustServiceProvider extends ServiceProvider
 {
     /**
-     * Indicates if loading of the provider is deferred.
-     *
-     * @var bool
-     */
-    protected $defer = false;
-
-    /**
      * Bootstrap the application events.
      *
      * @return void
      */
-    public function boot()
+    public function boot(): void
     {
-        // Publish config files
         $this->publishes([
-            __DIR__.'/../config/config.php' => app()->basePath() . '/config/entrust.php',
-        ]);
+            __DIR__.'/../config/config.php' => config_path('entrust.php'),
+        ], 'entrust-config');
 
-        // Register commands
-        $this->commands('command.entrust.migration');
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                MigrationCommand::class,
+            ]);
+        }
 
-        // Register blade directives
         $this->bladeDirectives();
     }
 
@@ -44,11 +40,9 @@ class EntrustServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function register()
+    public function register(): void
     {
         $this->registerEntrust();
-
-        $this->registerCommands();
 
         $this->mergeConfig();
     }
@@ -58,34 +52,32 @@ class EntrustServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    private function bladeDirectives()
+    private function bladeDirectives(): void
     {
-        if (!class_exists('\Blade')) return;
-
         // Call to Entrust::hasRole
-        Blade::directive('role', function($expression) {
+        Blade::directive('role', function ($expression) {
             return "<?php if (\\Entrust::hasRole({$expression})) : ?>";
         });
 
-        Blade::directive('endrole', function($expression) {
+        Blade::directive('endrole', function ($expression) {
             return "<?php endif; // Entrust::hasRole ?>";
         });
 
-        // Call to Entrust::can
-        Blade::directive('permission', function($expression) {
+        // Call to Entrust::can.
+        Blade::directive('permission', function ($expression) {
             return "<?php if (\\Entrust::can({$expression})) : ?>";
         });
 
-        Blade::directive('endpermission', function($expression) {
+        Blade::directive('endpermission', function ($expression) {
             return "<?php endif; // Entrust::can ?>";
         });
 
         // Call to Entrust::ability
-        Blade::directive('ability', function($expression) {
+        Blade::directive('ability', function ($expression) {
             return "<?php if (\\Entrust::ability({$expression})) : ?>";
         });
 
-        Blade::directive('endability', function($expression) {
+        Blade::directive('endability', function ($expression) {
             return "<?php endif; // Entrust::ability ?>";
         });
     }
@@ -95,25 +87,13 @@ class EntrustServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    private function registerEntrust()
+    private function registerEntrust(): void
     {
-        $this->app->bind('entrust', function ($app) {
+        $this->app->singleton(Entrust::class, function ($app) {
             return new Entrust($app);
         });
 
-        $this->app->alias('entrust', 'Zizaco\Entrust\Entrust');
-    }
-
-    /**
-     * Register the artisan commands.
-     *
-     * @return void
-     */
-    private function registerCommands()
-    {
-        $this->app->singleton('command.entrust.migration', function ($app) {
-            return new MigrationCommand();
-        });
+        $this->app->alias(Entrust::class, 'entrust');
     }
 
     /**
@@ -121,22 +101,10 @@ class EntrustServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    private function mergeConfig()
+    private function mergeConfig(): void
     {
         $this->mergeConfigFrom(
             __DIR__.'/../config/config.php', 'entrust'
         );
-    }
-
-    /**
-     * Get the services provided.
-     *
-     * @return array
-     */
-    public function provides()
-    {
-        return [
-            'command.entrust.migration'
-        ];
     }
 }

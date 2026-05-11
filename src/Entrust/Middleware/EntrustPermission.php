@@ -1,4 +1,6 @@
-<?php namespace Zizaco\Entrust\Middleware;
+<?php
+
+namespace Zizaco\Entrust\Middleware;
 
 /**
  * This file is part of Entrust,
@@ -10,22 +12,23 @@
 
 use Closure;
 use Illuminate\Contracts\Auth\Guard;
+use Illuminate\Http\Request;
 
 class EntrustPermission
 {
-	const DELIMITER = '|';
+    private const DELIMITER = '|';
 
-	protected $auth;
+    protected Guard $auth;
 
 	/**
 	 * Creates a new instance of the middleware.
 	 *
 	 * @param Guard $auth
 	 */
-	public function __construct(Guard $auth)
-	{
-		$this->auth = $auth;
-	}
+    public function __construct(Guard $auth)
+    {
+        $this->auth = $auth;
+    }
 
 	/**
 	 * Handle an incoming request.
@@ -35,19 +38,24 @@ class EntrustPermission
 	 * @param  $permissions
 	 * @return mixed
 	 */
-	public function handle($request, Closure $next, $permissions)
-	{
-		if (!is_array($permissions)) {
-    	// Convert $permissions to an empty string if it's null or not a string
-		    $permissions = $permissions ?? '';  
-		    $permissions = explode(self::DELIMITER, $permissions);
-		}
+    public function handle(Request $request, Closure $next, string|array|null $permissions): mixed
+    {
+        $user = $this->auth->user();
+        $permissions = $this->parse($permissions);
 
+        if (! $user || ! $user->hasPermission($permissions)) {
+            abort(403);
+        }
 
-		if ($this->auth->guest() || !$request->user()->can($permissions)) {
-			abort(403);
-		}
+        return $next($request);
+    }
 
-		return $next($request);
-	}
+    protected function parse(string|array|null $value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return array_values(array_filter(explode(self::DELIMITER, $value ?? ''), 'strlen'));
+    }
 }
