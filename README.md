@@ -1,14 +1,14 @@
-# ENTRUST (Laravel 9|10 Package)
+# ENTRUST (Laravel 9|10|11|12 Package)
 
 Forked from [zizaco/entrust](https://github.com/Zizaco/entrust)
 
-Entrust is a succinct and flexible way to add Role-based Permissions to **Laravel 9|10|11**.
+Entrust is a succinct and flexible way to add Role-based Permissions to **Laravel 9|10|11|12**.
 
 If you are using an older version of laravel, use version ~3.0
 
 ## Contents
 
-- [ENTRUST (Laravel 9|10 Package)](#entrust-laravel-910-package)
+- [ENTRUST (Laravel 9|10|11|12 Package)](#entrust-laravel-9101112-package)
   - [Contents](#contents)
   - [Installation](#installation)
   - [Configuration](#configuration)

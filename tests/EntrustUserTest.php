@@ -955,6 +955,7 @@ class EntrustUserTest extends TestCase
         $user->attachRole($roleObject);
         $user->attachRole($roleArray);
         $user->attachRole(3);
+        $this->addToAssertionCount(1);
     }
 
     public function testDetachRole()
@@ -998,6 +999,7 @@ class EntrustUserTest extends TestCase
         $user->detachRole($roleObject);
         $user->detachRole($roleArray);
         $user->detachRole(3);
+        $this->addToAssertionCount(1);
     }
 
     public function testAttachRoles()
@@ -1030,6 +1032,7 @@ class EntrustUserTest extends TestCase
         |------------------------------------------------------------
         */
         $user->attachRoles([1, 2, 3]);
+        $this->addToAssertionCount(1);
     }
 
     public function testDetachRoles()
@@ -1062,6 +1065,7 @@ class EntrustUserTest extends TestCase
         |------------------------------------------------------------
         */
         $user->detachRoles([1, 2, 3]);
+        $this->addToAssertionCount(1);
     }
 
     public function testDetachAllRoles()
@@ -1103,6 +1107,7 @@ class EntrustUserTest extends TestCase
         |------------------------------------------------------------
         */
         $user->detachRoles();
+        $this->addToAssertionCount(1);
 
     }
 

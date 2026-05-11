@@ -219,6 +219,7 @@ class EntrustTest extends TestCase
         */
         $entrust->routeNeedsRole($route, $oneRole);
         $entrust->routeNeedsRole($route, $manyRole);
+        $this->addToAssertionCount(1);
     }
 
     public function testRouteNeedsPermission()
@@ -259,6 +260,7 @@ class EntrustTest extends TestCase
         */
         $entrust->routeNeedsPermission($route, $onePerm);
         $entrust->routeNeedsPermission($route, $manyPerm);
+        $this->addToAssertionCount(1);
     }
 
     public function testRouteNeedsRoleOrPermission()
@@ -321,6 +323,7 @@ class EntrustTest extends TestCase
         $entrust->routeNeedsRoleOrPermission($route, $oneRole, $manyPerm);
         $entrust->routeNeedsRoleOrPermission($route, $manyRole, $onePerm);
         $entrust->routeNeedsRoleOrPermission($route, $manyRole, $manyPerm);
+        $this->addToAssertionCount(1);
     }
 
     public static function simpleFilterDataProvider()
@@ -424,7 +427,7 @@ class EntrustTest extends TestCase
         $entrust->routeNeedsRoleOrPermission($route, $roleName, $permName, $expectedResponse, $requireAll);
     }
 
-    protected function makeFilterName($route, array $roles, array $permissions = null)
+    protected function makeFilterName($route, array $roles, ?array $permissions = null)
     {
         if (is_null($permissions)) {
             return implode('_', $roles) . '_' . substr(md5($route), 0, 6);

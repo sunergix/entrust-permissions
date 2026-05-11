@@ -3,7 +3,7 @@
 use Mockery as m;
 use PHPUnit\Framework\TestCase;
 
-class MiddlewareTest extends TestCase
+abstract class MiddlewareTest extends TestCase
 {
 	public static $abortCode = null;
 
